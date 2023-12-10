@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <title>Doc Docy - Dashboard</title>
+    <style>
+        .navbar-brand,
+        .nav-link {
+            color: #007bff !important;
+        }
+
+        .section-card {
+            background-color: #eef4f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .upload-history-item {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .upload-history-item:hover {
+            background-color: #e9ecef;
+        }
+
+        h1 {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Doc Docy</a>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Dashboard</h1>
+
+        <!-- Upload Section -->
+        <div class="section-card">
+            <h2>Upload a Document</h2>
+            <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="mb-4">
+                <input type="file" name="file" required class="form-control">
+                <button type="submit" class="btn btn-primary mt-2">Upload</button>
+            </form>
+        </div>
+
+        <!-- Upload History -->
+        <div class="section-card">
+            <h2>History</h2>
+            {% if documents %}
+                <div class="upload-history">
+                    {% for doc in documents %}
+                        <div class="upload-history-item d-flex justify-content-between align-items-center">
+                            {{ doc.filename }} - Uploaded on: {{ doc.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") }}
+                            <div>
+                                <a href="{{ url_for('download_file', doc_id=doc.id) }}" class="btn btn-sm btn-success">Download</a>
+                                <form action="{{ url_for('delete_document', doc_id=doc.id) }}" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" aria-label="Delete">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No documents uploaded yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Logout Button -->
+        <a href="{{ url_for('logout') }}" class="btn btn-danger mt-3">Logout</a>
+    </div>
+</body>
+</html>

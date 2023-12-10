@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Head contents -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Doc Docy - Upload Success</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">File Uploaded Successfully</h1>
+        <p>Your extraction code is: {{ access_code }}</p>
+        {% if qr_code_url %}
+            <p>Scan this QR code to download the file:</p>
+            <div class="text-center">
+                <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid">
+            </div>
+        {% endif %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">Back to Dashboard</a>
+    </div>
+</body>
+</html>

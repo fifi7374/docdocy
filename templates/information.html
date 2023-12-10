@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Information - Doc Docy</title>
+    <style>
+        .content-section {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #007bff;
+        }
+
+        .navbar-brand,
+        .nav-link {
+            color: #007bff !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Doc Docy</a>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <div class="content-section">
+            <h2>Donate:</h2>
+            <p>The author: Yanxi (fifi) Feng. Zelle to (206) 484 2596; number only for donate. Any question email: <a href="https://mail.google.com/mail">yfeng29@uw.edu</a>.</p>
+        </div>
+        <div class="content-section">
+            <h2>Reference:</h2>
+            <p>1. Account system, Arpan Neupane, <a href="https://www.youtube.com/watch?v=71EU8gnZqZQ&t=47s">https://www.youtube.com/watch?v=71EU8gnZqZQ&t=47s</a></p>
+            <p>2. ChatGPT, Revise code, Provide methods</p>
+        </div>
+    </div>
+</body>
+</html>
