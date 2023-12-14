@@ -35,7 +35,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    # Remove or comment out the email field
+    # Remove out the email field
     # email = db.Column(db.String(100), nullable=True, unique=True)
 
 class Document(db.Model):
@@ -50,7 +50,7 @@ class Document(db.Model):
 class RegisterForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
     password = PasswordField(validators=[InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
-    # Remove or comment out the email field
+    # Remove out the email field
     # email = StringField(validators=[InputRequired(), Length(max=100)], render_kw={"placeholder": "Email"})
     submit = SubmitField('Register')
 
@@ -93,8 +93,6 @@ def delete_document(doc_id):
     if doc and doc.uploader_id == current_user.id:
         db.session.delete(doc)
         db.session.commit()
-        # Optionally, delete the file from the filesystem
-        # os.remove(os.path.join(app.config['UPLOAD_FOLDER'], doc.filename))
     return redirect(url_for('dashboard'))
 
 @app.route('/logout')
@@ -149,23 +147,13 @@ def upload_file():
                 db.session.add(new_doc)
 
             db.session.commit()
-
-            # Generate QR code URL
             qr_code_url = generate_qr_code(url_for('access_document', code=access_code, _external=True))
-
             if qr_code_url:
-                # Redirect to upload_success page with access_code and qr_code_url
                 return render_template('upload_success.html', access_code=access_code, qr_code_url=qr_code_url)
             else:
-                # Handle the scenario when QR code generation fails
-                # E.g., show a message to the user, log the error, etc.
                 return render_template('upload_success.html', access_code=access_code, qr_code_url=None)
 
     return render_template('upload.html')
-
-
-
-
 
 @app.route('/download', methods=['GET', 'POST'])
 def download():
