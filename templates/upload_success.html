@@ -6,18 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <title>Doc Docy - Upload Success</title>
+    <style>
+        .access-code {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #007bff;
+        }
+        .qr-code-img {
+            margin-top: 15px;
+            max-width: 200px;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-center">File Uploaded Successfully</h1>
-        <p>Your extraction code is: {{ access_code }}</p>
-        {% if qr_code_url %}
-            <p>Scan this QR code to download the file:</p>
-            <div class="text-center">
-                <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid">
-            </div>
-        {% endif %}
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">Back to Dashboard</a>
+        <div class="text-center mt-4">
+            <p>Your extraction code is: <span class="access-code">{{ access_code }}</span></p>
+            {% if qr_code_url %}
+                <p>Scan this QR code to download the file:</p>
+                <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid qr-code-img">
+            {% else %}
+                <p>QR code is not available at the moment.</p>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        </div>
     </div>
 </body>
 </html>

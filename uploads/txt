@@ -1,0 +1,61 @@
+import mysql.connector
+from flask import Flask, request, redirect, url_for, render_template, flash, session
+
+app = Flask(__name__)
+app.secret_key = 'your-secret-key'
+
+# Database Config
+db_config = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'yourpassword',
+    'database': 'mydatabase'
+}
+
+# Function to connect to the database
+def get_db_connection():
+    connection = mysql.connector.connect(**db_config)
+    return connection
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        flash('Account created successfully! Please login.')
+        return redirect(url_for('login'))
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+        user = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if user:
+            session['username'] = username
+            flash('Login successful!')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' in session:
+        return render_template('dashboard.html', username=session['username'])
+    flash('Please login to view this page.')
+    return redirect(url_for('login'))
+
+if __name__ == '__main__':

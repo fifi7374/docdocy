@@ -3,18 +3,21 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import InputRequired, Length, Email, Optional
+from wtforms.validators import InputRequired, Length, Optional
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import logging
 import os
 import random
 import string
 import requests
+import uuid
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'thisisasecretkey'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 UPLOAD_FOLDER = 'uploads'
@@ -32,7 +35,8 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    email = db.Column(db.String(100), nullable=True, unique=True)
+    # Remove or comment out the email field
+    # email = db.Column(db.String(100), nullable=True, unique=True)
 
 class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,13 +45,15 @@ class Document(db.Model):
     access_code = db.Column(db.String(4), unique=True)
     uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
-    qr_code = db.Column(db.String(300))
+    unique_id = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
 
 class RegisterForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
     password = PasswordField(validators=[InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
-    email = StringField(validators=[InputRequired(), Email(), Length(max=100)], render_kw={"placeholder": "Email"})
+    # Remove or comment out the email field
+    # email = StringField(validators=[InputRequired(), Length(max=100)], render_kw={"placeholder": "Email"})
     submit = SubmitField('Register')
+
 
 class LoginForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
@@ -103,7 +109,6 @@ def register():
     if form.validate_on_submit():
         existing_user = User.query.filter_by(username=form.username.data).first()
         if existing_user:
-            # User already exists
             return render_template('register.html', form=form, error="Username already taken.")
         hashed_password = bcrypt.generate_password_hash(form.password.data)
         new_user = User(username=form.username.data, password=hashed_password)
@@ -111,6 +116,8 @@ def register():
         db.session.commit()
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
+
+
 def generate_access_code():
     return ''.join(random.choices(string.digits, k=4))
 
@@ -123,26 +130,41 @@ def upload_file():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
+
             access_code = generate_access_code()
+            existing_doc = Document.query.filter_by(access_code=access_code).first()
+
+            if existing_doc:
+                existing_doc.filename = filename
+                existing_doc.path = file_path
+                existing_doc.uploaded_at = datetime.utcnow()
+            else:
+                new_doc = Document(
+                    filename=filename,
+                    path=file_path,
+                    access_code=access_code,
+                    uploader_id=current_user.id,
+                    uploaded_at=datetime.utcnow()
+                )
+                db.session.add(new_doc)
+
+            db.session.commit()
 
             # Generate QR code URL
             qr_code_url = generate_qr_code(url_for('access_document', code=access_code, _external=True))
 
-            # Store QR code URL in the database
-            new_doc = Document(
-                filename=filename,
-                path=file_path,
-                access_code=access_code,
-                uploader_id=current_user.id,
-                uploaded_at=datetime.utcnow(),
-                qr_code=qr_code_url  # Store the QR code URL
-            )
-            db.session.add(new_doc)
-            db.session.commit()
+            if qr_code_url:
+                # Redirect to upload_success page with access_code and qr_code_url
+                return render_template('upload_success.html', access_code=access_code, qr_code_url=qr_code_url)
+            else:
+                # Handle the scenario when QR code generation fails
+                # E.g., show a message to the user, log the error, etc.
+                return render_template('upload_success.html', access_code=access_code, qr_code_url=None)
 
-            # Pass both access_code and qr_code_url to the template
-            return render_template('upload_success.html', access_code=access_code, qr_code_url=qr_code_url)
     return render_template('upload.html')
+
+
+
 
 
 @app.route('/download', methods=['GET', 'POST'])
@@ -154,9 +176,9 @@ def download():
             return render_template('display_file.html', doc=doc)
     return render_template('home.html', error="Invalid access code")
 
-@app.route('/download_file/<int:doc_id>')
-def download_file(doc_id):
-    doc = Document.query.get(doc_id)
+@app.route('/download_file/<unique_id>')
+def download_file(unique_id):
+    doc = Document.query.filter_by(unique_id=unique_id).first()
     if doc:
         return send_from_directory(app.config['UPLOAD_FOLDER'], doc.filename, as_attachment=True)
     return 'File not found', 404
@@ -173,12 +195,17 @@ def information():
     return render_template('information.html')
 
 def generate_qr_code(data):
-    api_url = "https://api.qrserver.com/v1/create-qr-code/"
-    params = {'size': '150x150', 'data': data}
-    response = requests.get(api_url, params=params)
-    if response.status_code == 200:
-        return response.url
-    else:
+    try:
+        api_url = "https://api.qrserver.com/v1/create-qr-code/"
+        params = {'size': '150x150', 'data': data}
+        response = requests.get(api_url, params=params)
+        if response.status_code == 200:
+            return response.url
+        else:
+            logging.error(f"QR Code API responded with status code: {response.status_code}")
+            return None
+    except Exception as e:
+        logging.error(f"Error occurred while generating QR code: {e}")
         return None
 
 if __name__ == "__main__":

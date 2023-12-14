@@ -32,7 +32,7 @@
             <div class="card-body">
                 <h5 class="card-title">{{ doc.filename }}</h5>
                 <p class="card-text">Click the button below to download the document.</p>
-                <a href="{{ url_for('download_file', doc_id=doc.id) }}" class="btn btn-primary">Download File</a>
+                <a href="{{ url_for('download_file', unique_id=doc.unique_id) }}" class="btn btn-primary">Download File</a>
             </div>
         </div>
     </div>
